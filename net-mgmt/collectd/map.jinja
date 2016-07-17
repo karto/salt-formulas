@@ -1,0 +1,28 @@
+
+{### CONFIG DATA ###}
+{% set collectd = {
+    'lookup': {
+        'pkg': 'collectd',
+        'extra_pkgs': None,
+        'service': 'collectd',
+        'config_file': '/etc/collectd.conf',
+        'config_dir': '/etc/collectd.d',
+        'typesdb_file': '/etc/collectd.types.db'
+    }
+} %}
+{% do salt['pillar.get']('net-mgmt:collectd', collectd, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'default': {},
+    'FreeBSD': {
+        'pkg': 'collectd5',
+        'config_file': '/usr/local/etc/collectd.conf',
+        'config_dir': '/usr/local/etc/collectd.d',
+        'typesdb_file': '/usr/local/etc/collectd.types.db'
+    },
+}, merge=salt['pillar.get']('net-mgmt:collectd:lookup')) %}
+{% do collectd.lookup.update(lookup) %}
+
+

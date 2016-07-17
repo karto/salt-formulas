@@ -1,0 +1,23 @@
+
+{### CONFIG DATA ###}
+{% set rsyslog = {
+    'lookup': {
+        'pkg': 'rsyslog',
+        'service': 'rsyslog',
+        'config_file': None,
+        'config_dir': '/etc/rsyslog.d',
+    },
+} %}
+{% do salt['pillar.get']('sysutils:rsyslog', rsyslog, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'default': {},
+    'FreeBSD': {
+        'config_dir': '/usr/local/etc/rsyslog.d',
+    },
+}, merge=salt['pillar.get']('sysutils:rsyslog:lookup')) %}
+{% do rsyslog.lookup.update(lookup) %}
+
+

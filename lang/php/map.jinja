@@ -1,0 +1,23 @@
+
+{### CONFIG DATA ###}
+{% set php = {
+    'lookup': {
+        'pkg': 'php',
+        'config_file': '/etc/php.ini'
+    }
+} %}
+{% do salt['pillar.get']('lang:php', php, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'FreeBSD': {
+        'pkg': 'php56',
+        'config_file': '/usr/local/etc/php.ini'
+    },
+    'RedHat': {
+    },
+}, merge=salt['pillar.get']('lang:php:lookup')) %}
+{% do php.lookup.update(lookup) %}
+
+

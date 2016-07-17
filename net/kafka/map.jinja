@@ -1,0 +1,37 @@
+
+
+{### CONFIG DATA ###}
+{% set kafka = {
+  'lookup': {
+    'pkg': None,
+    'extra_pkgs': ['openjdk', 'mx4j'],
+    'src_url': 'http://mirrors.rackhosting.com/apache/kafka/0.10.0.0/kafka_2.11-0.10.0.0.tgz',
+    'src_hash': 'https://dist.apache.org/repos/dist/release/kafka/0.10.0.0/kafka_2.11-0.10.0.0.tgz.md5',
+    'src_name': 'kafka_2.11-0.10.0.0',
+    'base_dir': '/usr/local/kafka',
+    'service': 'kafka',
+    'config_file': '/usr/local/etc/kafka/server.properties',
+    'log4j_file': '/usr/local/etc/kafka/log4j.properties',
+    'rc_conf': ''
+  }
+} %}
+{% do salt['pillar.get']('kafka', kafka, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+  'default' : {},
+  'FreeBSD': {},
+}, merge=salt['pillar.get']('kafka:lookup')) %}
+{% do kafka.lookup.update(lookup) %}
+
+
+
+{### LOOKUP myid ###}
+{% if kafka.servers %}
+    {% for key, value in kafka.servers.iteritems() %}
+        {% if value == grains['fqdn'] %}
+            {% do kafka.update({'myid': key}) %}
+        {% endif %}
+    {% endfor %}
+{% endif %}

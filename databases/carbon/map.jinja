@@ -1,0 +1,26 @@
+
+{### CONFIG DATA ###}
+{% set carbon = {
+    'lookup': {
+        'pkg': 'carbon',
+        'cache_service': 'carbon-cache',
+        'aggregator_service': 'carbon-aggregator',
+        'relay_service': 'carbon-relay',
+        'config_dir': '/etc/carbon'
+    }
+} %}
+{% do salt['pillar.get']('databaseas:carbon', carbon, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'FreeBSD': {
+        'pkg': 'py27-carbon',
+        'config_dir': '/usr/local/etc/carbon',
+        'cache_rc_conf': None,
+        'relay_rc_conf': None,
+        'aggregator_rc_conf': None
+    },
+}, merge=salt['pillar.get']('databaseas:carbon:lookup')) %}
+{% do carbon.lookup.update(lookup) %}
+

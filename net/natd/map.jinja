@@ -1,0 +1,17 @@
+
+{### CONFIG DATA ###}
+{% set natd = {
+    'lookup': {
+        'config_file': '/etc/natd.conf'
+    }
+} %}
+{% do salt['pillar.get']('security:natd', natd, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'FreeBSD': {
+    },
+}, merge=salt['pillar.get']('security:natd:lookup')) %}
+{% do natd.lookup.update(lookup) %}
+

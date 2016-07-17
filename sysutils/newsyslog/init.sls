@@ -1,0 +1,5 @@
+
+include:
+  - sysutils.newsyslog.config
+
+

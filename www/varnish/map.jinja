@@ -1,0 +1,24 @@
+
+{### CONFIG DATA ###}
+{% set varnish = {
+    'lookup': {
+        'pkg': 'varnish',
+        'extra_pkgs': None,
+        'service': 'varnish',
+        'config_dir': '/etc/varnish',
+        'pkgrepo': None,
+    },
+    'vcl_git': None,
+    'default_vcl': 'default.vcl',
+} %}
+{% do salt['pillar.get']('www:varnish', varnish, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'default': {},
+    'FreeBSD': {
+        'config_dir': '/usr/local/etc/varnish',
+    },
+}, merge=salt['pillar.get']('www:varnish:lookup')) %}
+{% do varnish.lookup.update(lookup) %}

@@ -1,0 +1,21 @@
+
+{### CONFIG DATA ###}
+{% set firewalld = {
+    'lookup': {
+        'pkg': 'firewalld',
+        'service': 'firewalld',
+        'icmptypes_dir': '/etc/firewalld/icmptypes',
+        'services_dir': '/etc/firewalld/services',
+        'zones_dir': '/etc/firewalld/zones',
+    }
+} %}
+{% do salt['pillar.get']('security:firewalld', firewalld, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'default': {}
+}, merge=salt['pillar.get']('security:firewalld:lookup')) %}
+{% do firewalld.lookup.update(lookup) %}
+
+

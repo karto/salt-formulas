@@ -1,0 +1,24 @@
+
+{### CONFIG DATA ###}
+{% set icinga2 = {
+    'lookup': {
+        'pkg': 'icinga2',
+        'service': 'icinga2',
+        'config_dir': '/etc/icinga2',
+        'plugin_dir': '/usr/libexec/nagios'
+    },
+    'features_enabled': ['checker', 'mainlog', 'notification']
+} %}
+{% do salt['pillar.get']('net-mgmt:icinga2', icinga2, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'FreeBSD': {
+        'config_dir': '/usr/local/etc/icinga2',
+        'plugin_dir': '/usr/local/libexec/nagios'
+    },
+}, merge=salt['pillar.get']('net-mgmt:icinga2:lookup')) %}
+{% do icinga2.lookup.update(lookup) %}
+
+

@@ -1,0 +1,23 @@
+
+{### CONFIG DATA ###}
+{% set filebeat = {
+    'lookup': {
+        'pkg': 'filebeat',
+        'service': 'filebeat',
+        'config_file': '/etc/filebeat.yml',
+        'config_dir': 'etc/filebeat.d'
+    }
+} %}
+{% do salt['pillar.get']('sysutils:filebeat', filebeat, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'default': {},
+    'FreeBSD': {
+        'config_file': '/usr/local/etc/filebeat.yml',
+        'config_dir': '/usr/local/etc/filebeat.d'
+    },
+}, merge=salt['pillar.get']('sysutils:filebeat:lookup')) %}
+{% do filebeat.lookup.update(lookup) %}
+

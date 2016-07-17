@@ -1,0 +1,3 @@
+
+syslogd:
+  service.running

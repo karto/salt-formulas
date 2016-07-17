@@ -1,0 +1,107 @@
+#!/bin/sh
+# 
+# 
+
+# PROVIDE: carbon-relay
+# KEYWORD: shutdown
+
+# 
+# Add the following lines to /etc/rc.conf.local or /etc/rc.conf
+# to enable this service:
+#
+# carbon_relay_enable (bool):	Set to NO by default.
+#			Set it to YES to enable it.
+# carbon_relay_instances:	Empty by default (start single instance).
+#			Space-separated list of instances to start.
+# carbon_relay_conf:		File where carbon configuration resides
+#			Default: /usr/local/etc/carbon/carbon.conf
+# carbon_relay_user:		The user account carbon daemon runs as what
+#			you want it to be. It uses 'root' user by
+#			default.
+# carbon_relay_group:		The group account carbon daemon runs as what
+#			you want it to be. It uses 'wheel' group by
+#			default.
+# carbon_relay_debug:		Determines if you want carbon to run in debug
+#			mode, it may be very verbose. It will not run
+#			in debug by default.
+# carbon_relay_logdir:	Directory where carbon logs are stored.
+#			Default: /var/db/carbon/log
+# 
+
+. /etc/rc.subr
+
+name=carbon_relay
+rcvar=carbon_relay_enable
+
+load_rc_config ${name}
+
+: ${carbon_relay_enable:=NO}
+: ${carbon_relay_instances:=""}
+: ${carbon_relay_user:=carbon}
+: ${carbon_relay_group:=carbon}
+: ${carbon_relay_conf:=/usr/local/etc/carbon/carbon.conf}
+: ${carbon_relay_debug:=NO}
+: ${carbon_relay_logdir:=/var/log/carbon/relay}
+: ${carbon_relay_pidfile:=/var/run/carbon/relay.pid}
+
+is_carbon_relay_instance() {
+    local instance
+    for instance in ${carbon_relay_instances}; do
+        if [ "${instance}" = "$1" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+if [ -n "${carbon_relay_instances}" ]; then
+    if [ -n "$2" ]; then
+        instance="$2"
+        if ! is_carbon_relay_instance ${instance}; then
+            echo "$0: no such instance defined in carbon_relay_instances."
+            exit 1
+        fi
+        instance_arg="--instance=${instance}"
+        eval carbon_relay_user=\${carbon_relay_${instance}_user:-"${carbon_relay_user}"}
+        eval carbon_relay_group=\${carbon_relay_${instance}_group:-"${carbon_relay_group}"}
+        eval carbon_relay_conf=\${carbon_relay_${instance}_conf:-"${carbon_relay_conf}"}
+        eval carbon_relay_debug=\${carbon_relay_${instance}_debug:-"${carbon_relay_debug}"}
+        eval carbon_relay_logdir=\${carbon_relay_${instance}_logdir:-"${carbon_relay_logdir}-${instance}"}
+        eval carbon_relay_pidfile=\${carbon_relay_${instance}_pidfile:-"/var/run/carbon/relay-${instance}.pid"}
+    elif [ -n "$1" ]; then
+        let retcode=0 >/dev/null
+        for instance in ${carbon_relay_instances}; do
+            echo "Processing carbon instance: ${instance}"
+            /usr/local/etc/rc.d/carbon-relay $1 ${instance}
+            let retcode=retcode+$? >/dev/null
+        done
+        exit $retcode 
+    fi
+fi
+
+start_precmd="${name}_precmd"
+stop_cmd="${name}_stop"
+required_files="${carbon_relay_conf} /usr/local/etc/carbon/relay-rules.conf"
+
+pidfile=${carbon_relay_pidfile}
+command_interpreter="/usr/local/bin/python2.7"
+command="/usr/local/bin/carbon-relay.py"
+command_args="--config=${carbon_relay_conf} ${instance_arg} --logdir ${carbon_relay_logdir} --pidfile ${pidfile} start"
+
+carbon_relay_precmd()
+{
+  /usr/bin/install -d -o ${carbon_relay_user} -g ${carbon_relay_group} -m 750 /var/log/carbon
+  /usr/bin/install -d -o ${carbon_relay_user} -g ${carbon_relay_group} -m 750 /var/run/carbon
+}
+
+carbon_relay_stop()
+{
+    echo "Stopping $name"
+    pids=`check_pidfile ${pidfile} ${command} ${command_interpreter}`
+
+    /usr/local/bin/carbon-cache.py --config=${carbon_relay_conf} ${instance_arg} --pidfile ${pidfile} stop
+    wait_for_pids ${pids}
+}
+
+run_rc_command "$1"
+

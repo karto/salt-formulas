@@ -1,0 +1,99 @@
+#!/bin/sh
+
+# Configuration settings for logstash-local in /etc/rc.conf:
+#
+# PROVIDE: logstash-local
+# REQUIRE: DAEMON
+# BEFORE:  LOGIN
+# KEYWORD: shutdown
+#
+# logstash_local_enable (bool):
+#   Default value: "NO"
+#   Flag that determines whether Logstash is enabled.
+#
+# logstash_local_home (string):
+#   Default value: "/usr/local/logstash"
+#   Logstash installation directory.
+#
+# logstash_local_config (string):
+#   Default value: /usr/local/etc/${name}/${name}.conf
+#   Logstash configuration file path.
+#
+# logstash_local_log (bool):
+#   Set to "NO" by default.
+#   Set it to "YES" to enable logstash logging to file
+#   Default output to /var/log/logstash_local.log
+#
+# logstash_local_log_file (string):
+#   Default value: "${logdir}/${name}.log"
+#   Log file path.
+#
+# logstash_local_java_home (string):
+#   Default value: "/usr/local/openjdk8"
+#   Root directory of the desired Java SDK.
+#   The JAVA_HOME environment variable is set with the contents of this
+#   variable.
+#
+# logstash_local_java_opts (string):
+#   Default value: ""
+#   Options to pass to the Java Virtual Machine.
+#   The JAVA_OPTS environment variable is set with the contents of this
+#   variable.
+#
+# logstash_local_opts (string):
+#   Default value: ""
+#   Additional command line flags for logstash, eg. "-r"
+#
+
+. /etc/rc.subr
+
+name=logstash_local
+dashname=logstash-local
+rcvar=logstash_local_enable
+
+load_rc_config ${name}
+
+logdir="/var/log"
+
+: ${logstash_local_enable="NO"}
+: ${logstash_local_home="/usr/local/logstash"}
+: ${logstash_local_config="/usr/local/etc/logstash/${dashname}.conf"}
+: ${logstash_local_log="NO"}
+: ${logstash_local_log_file="${logdir}/${dashname}.log"}
+: ${logstash_local_java_home="/usr/local/openjdk8"}
+: ${logstash_local_java_opts=""}
+: ${logstash_local_opts=""}
+
+piddir=/var/run/logstash
+pidfile=${piddir}/${dashname}.pid
+
+if [ -d $piddir ]; then
+  mkdir -p $piddir
+fi
+
+logstash_local_cmd="${logstash_local_home}/bin/logstash"
+procname="${logstash_local_java_home}/bin/java"
+
+logstash_local_chdir=${logstash_local_home}
+logstash_local_log_options=""
+
+if checkyesno logstash_local_log; then
+  logstash_local_log_options=" --log ${logstash_local_log_file}" 
+fi
+
+logstash_local_args="agent -f ${logstash_local_config} ${logstash_local_log_options} ${logstash_local_opts}"
+
+JAVA_OPTS="${logstash_local_java_opts}"
+JAVA_HOME="${logstash_local_java_home}"
+export JAVA_OPTS
+export JAVA_HOME
+
+command="/usr/sbin/daemon"
+command_args="-f -p ${pidfile} ${logstash_local_cmd} ${logstash_local_args}"
+required_files="${logstash_local_home} ${logstash_local_java_home} ${logstash_local_cmd} ${logstash_local_config}"
+#echo command_args=$command_args
+# Include /usr/local/bin in path because Logstash startup scripts
+# assume bash is in path.
+PATH=/usr/local/bin:$PATH
+
+run_rc_command "$1"

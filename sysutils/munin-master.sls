@@ -1,0 +1,3 @@
+munin-master:
+  pkg.latest
+    

@@ -1,0 +1,34 @@
+
+{### CONFIG DATA ###}
+{% set certificates = {
+  'lookup': {
+    'certs_dir': '/etc/pki/tls/certs',
+    'private_dir': '/etc/pki/tls/private'
+  },
+  'vault': {
+    'token': '',
+    'addr': 'https://vault:8200',
+    'mount': 'pki',
+    'role': 'salt_minion',
+    'issue': {
+      grains.host: {
+        'params': {
+          'common_name': grains.fqdn,
+          'alt_names': [grains.host, 'localhost']|join(','),
+          'ip_sans': grains.ipv4|join(','),
+          'ttl': '26280h'
+        }
+      }
+    }
+  }
+} %}
+{% do salt['pillar.get']('dr:certificates', certificates, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+  'default': {}
+}, merge=salt['pillar.get']('dr:certificates:lookup')) %}
+{% do certificates.lookup.update(lookup) %}
+
+

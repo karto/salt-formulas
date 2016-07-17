@@ -1,0 +1,23 @@
+
+
+{### CONFIG DATA ###}
+{% set grafana = {
+    'lookup': {
+        'pkg': 'grafana3',
+        'service': 'grafana3',
+        'config_file': '/etc/grafana3.conf',
+        'rc_conf': None
+    }
+} %}
+{% do salt['pillar.get']('grafana', grafana, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'FreeBSD': {
+        'config_file': '/usr/local/etc/grafana3.conf'
+    },
+}, merge=salt['pillar.get']('grafana:lookup')) %}
+{% do grafana.lookup.update(lookup) %}
+
+

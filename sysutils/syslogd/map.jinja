@@ -1,0 +1,19 @@
+
+{### CONFIG DATA ###}
+{% set syslogd = {
+    'lookup': {
+        'service': 'syslogd',
+        'flags': '-C -c -c -n -s -s -v',
+        'config_file': '/etc/syslog.conf'
+    }
+} %}
+{% do salt['pillar.get']('sysutils:syslogd', syslogd, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'FreeBSD': {
+    },
+}, merge=salt['pillar.get']('sysutils:syslogd:lookup')) %}
+{% do syslogd.lookup.update(lookup) %}
+

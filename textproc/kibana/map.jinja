@@ -1,0 +1,23 @@
+
+
+{### CONFIG DATA ###}
+{% set kibana = {
+    'lookup': {
+        'pkg': 'kibana45',
+        'service': 'kibana',
+        'config_file': '/etc/kibana.yml',
+        'rc_conf': None
+    }
+} %}
+{% do salt['pillar.get']('kibana', kibana, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'FreeBSD': {
+        'config_file': '/usr/local/etc/kibana.yml'
+    },
+}, merge=salt['pillar.get']('kibana:lookup')) %}
+{% do kibana.lookup.update(lookup) %}
+
+

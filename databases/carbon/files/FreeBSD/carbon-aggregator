@@ -1,0 +1,107 @@
+#!/bin/sh
+# 
+# 
+
+# PROVIDE: carbon-aggregator
+# KEYWORD: shutdown
+
+# 
+# Add the following lines to /etc/rc.conf.local or /etc/rc.conf
+# to enable this service:
+#
+# carbon_aggregator_enable (bool):	Set to NO by default.
+#			Set it to YES to enable it.
+# carbon_aggregator_instances:	Empty by default (start single instance).
+#			Space-separated list of instances to start.
+# carbon_aggregator_conf:		File where carbon configuration resides
+#			Default: /usr/local/etc/carbon/carbon.conf
+# carbon_aggregator_user:		The user account carbon daemon runs as what
+#			you want it to be. It uses 'root' user by
+#			default.
+# carbon_aggregator_group:		The group account carbon daemon runs as what
+#			you want it to be. It uses 'wheel' group by
+#			default.
+# carbon_aggregator_debug:		Determines if you want carbon to run in debug
+#			mode, it may be very verbose. It will not run
+#			in debug by default.
+# carbon_aggregator_logdir:	Directory where carbon logs are stored.
+#			Default: /var/db/carbon/log
+# 
+
+. /etc/rc.subr
+
+name=carbon_aggregator
+rcvar=carbon_aggregator_enable
+
+load_rc_config ${name}
+
+: ${carbon_aggregator_enable:=NO}
+: ${carbon_aggregator_instances:=""}
+: ${carbon_aggregator_user:=carbon}
+: ${carbon_aggregator_group:=carbon}
+: ${carbon_aggregator_conf:=/usr/local/etc/carbon/carbon.conf}
+: ${carbon_aggregator_debug:=NO}
+: ${carbon_aggregator_logdir:=/var/log/carbon/aggregator}
+: ${carbon_aggregator_pidfile:=/var/run/carbon/aggregator.pid}
+
+is_carbon_aggregator_instance() {
+    local instance
+    for instance in ${carbon_aggregator_instances}; do
+        if [ "${instance}" = "$1" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+if [ -n "${carbon_aggregator_instances}" ]; then
+    if [ -n "$2" ]; then
+        instance="$2"
+        if ! is_carbon_aggregator_instance ${instance}; then
+            echo "$0: no such instance defined in carbon_aggregator_instances."
+            exit 1
+        fi
+        instance_arg="--instance=${instance}"
+        eval carbon_aggregator_user=\${carbon_aggregator_${instance}_user:-"${carbon_aggregator_user}"}
+        eval carbon_aggregator_group=\${carbon_aggregator_${instance}_group:-"${carbon_aggregator_group}"}
+        eval carbon_aggregator_conf=\${carbon_aggregator_${instance}_conf:-"${carbon_aggregator_conf}"}
+        eval carbon_aggregator_debug=\${carbon_aggregator_${instance}_debug:-"${carbon_aggregator_debug}"}
+        eval carbon_aggregator_logdir=\${carbon_aggregator_${instance}_logdir:-"${carbon_aggregator_logdir}-${instance}"}
+        eval carbon_aggregator_pidfile=\${carbon_aggregator_${instance}_pidfile:-"/var/run/carbon/aggregator-${instance}.pid"}
+    elif [ -n "$1" ]; then
+        let retcode=0 >/dev/null
+        for instance in ${carbon_aggregator_instances}; do
+            echo "Processing carbon aggregator instance: ${instance}"
+            /usr/local/etc/rc.d/carbon-aggregator $1 ${instance}
+            let retcode=retcode+$? >/dev/null
+        done
+        exit $retcode
+    fi
+fi
+
+start_precmd="${name}_precmd"
+stop_cmd="${name}_stop"
+required_files="${carbon_aggregator_conf} /usr/local/etc/carbon/aggregation-rules.conf"
+
+pidfile=${carbon_aggregator_pidfile}
+command_interpreter="/usr/local/bin/python2.7"
+command="/usr/local/bin/carbon-aggregator.py"
+command_args="--config=${carbon_aggregator_conf} ${instance_arg} --logdir ${carbon_aggregator_logdir} --pidfile ${pidfile} start"
+
+carbon_aggregator_precmd()
+{
+  /usr/bin/install -d -o ${carbon_aggregator_user} -g ${carbon_aggregator_group} -m 750 /var/log/carbon
+  /usr/bin/install -d -o ${carbon_aggregator_user} -g ${carbon_aggregator_group} -m 750 /var/run/carbon
+}
+
+carbon_aggregator_stop()
+{
+    echo "Stopping $name"
+    pids=`check_pidfile ${pidfile} ${command} ${command_interpreter}`
+
+    /usr/local/bin/carbon-cache.py --config=${carbon_aggregator_conf} ${instance_arg} --pidfile ${pidfile} stop
+    wait_for_pids ${pids}
+}
+
+run_rc_command "$1"
+

@@ -1,0 +1,19 @@
+
+{### CONFIG DATA ###}
+{% set uwsgi = {
+    'lookup': {
+        'pkg': 'uwsgi',
+        'service': 'uwsgi'
+    }
+} %}
+{% do salt['pillar.get']('www:uwsgi', uwsgi, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'FreeBSD': {
+        'rc_conf': None
+    },
+}, merge=salt['pillar.get']('www:uwsgi:lookup')) %}
+{% do uwsgi.lookup.update(lookup) %}
+

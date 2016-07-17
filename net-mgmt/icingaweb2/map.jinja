@@ -1,0 +1,21 @@
+
+{### CONFIG DATA ###}
+{% set icingaweb2 = {
+    'lookup': {
+        'pkg': 'icingaweb2',
+        'service': 'icingaweb2',
+        'config_file': '/etc/icingaweb2.conf'
+    }
+} %}
+{% do salt['pillar.get']('icingaweb2', icingaweb2, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'FreeBSD': {
+        'pkg': 'icingaweb2',
+        'config_file': '/usr/local/etc/icingaweb2.conf'
+    },
+}, merge=salt['pillar.get']('icingaweb2:lookup')) %}
+{% do icingaweb2.lookup.update(lookup) %}
+

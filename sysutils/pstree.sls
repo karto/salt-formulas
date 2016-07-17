@@ -1,0 +1,4 @@
+
+pstree:
+  pkg.latest
+

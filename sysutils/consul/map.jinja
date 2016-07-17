@@ -1,0 +1,22 @@
+
+{### CONFIG DATA ###}
+{% set consul = {
+    'lookup': {
+        'pkg': 'consul',
+        'service': 'consul',
+        'args': False,
+        'config_dir': '/etc/consul.d'
+    },
+    'servers': salt['mine.get']('I@environments:devops-udv and I@clusters:atlas-01', 'fqdn_ip4', expr_form='compound', exclude_minion=True)
+} %}
+{% do salt['pillar.get']('sysutils:consul', consul, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'FreeBSD': {
+        'config_dir': '/usr/local/etc/consul.d'
+    },
+}, merge=salt['pillar.get']('sysutils:consul:lookup')) %}
+{% do consul.lookup.update(lookup) %}
+

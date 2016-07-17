@@ -1,0 +1,33 @@
+
+{### CONFIG DATA ###}
+{% set postgresql = {
+    'lookup': {
+        'pkg': 'postgresql',
+        'service': 'postgresql',
+        'config_file': '/var/db/pgsql/data/postgresql.conf',
+        'pg_hba_file': '/var/db/pgsql/data/pg_hba.conf',
+        'recovery_file': '/var/db/pgsql/data/recovery.conf',
+        'pgpass_file': '/var/db/pgsql/.pgpass'
+    }
+} %}
+{% do salt['pillar.get']('postgresql', postgresql, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'FreeBSD': {
+        'pkg': 'postgresql93-server',
+        'config_file': '/usr/local/pgsql/data/postgresql.conf',
+        'pg_hba_file': '/usr/local/pgsql/data/pg_hba.conf',
+        'recovery_file': '/usr/local/pgsql/data/recovery.conf',
+        'pgpass_file': '/usr/local/pgsql/.pgpass'
+    },
+}, merge=salt['pillar.get']('postgresql:lookup')) %}
+{% do postgresql.lookup.update(lookup) %}
+
+
+{### Servers ###}
+{% set servers = salt['pillar.get']('postgresql:servers', {grains.fqdn: grains.fqdn_ip}) %}
+{% set primary_server = salt['pillar.get']('postgresql:primary_server', servers.iterkeys()|first) %}
+{% do postgresql.update({ 'servers': servers, 'primary_server': primary_server }) %}
+

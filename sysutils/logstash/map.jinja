@@ -1,0 +1,32 @@
+
+
+{### CONFIG DATA ###}
+{% set logstash = {
+    'lookup': {
+        'pkg': 'logstash',
+        'service': 'logstash',
+        'config_dir': '/etc/logstash/conf.d',
+        'patterns_dir': '/opt/logstash/patterns',
+        'elasticsearch_templates_dir': '/opt/logstash/elasticsearch_templates',
+        'rc_conf': 'logstash_config="/etc/logstash/conf.d"
+logstash_user="logstash"
+logstash_group="logstash"
+'
+    },
+} %}
+{% do salt['pillar.get']('sysutils:logstash', logstash, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'FreeBSD': {
+        'config_dir': '/usr/local/etc/logstash/conf.d',
+        'patterns_dir': '/usr/local/logstash/patterns',
+        'elasticsearch_templates_dir': '/usr/local/logstash/elasticsearch_templates',
+        'rc_conf': 'logstash_config="/usr/local/etc/logstash/conf.d"
+logstash_user="logstash"
+logstash_group="logstash"
+'
+    },
+}, merge=salt['pillar.get']('sysutils:logstash:lookup')) %}
+{% do logstash.lookup.update(lookup) %}

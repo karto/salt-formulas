@@ -1,0 +1,108 @@
+#!/bin/sh
+# 
+# 
+
+# PROVIDE: carbon-cache
+# KEYWORD: shutdown
+
+# 
+# Add the following lines to /etc/rc.conf.local or /etc/rc.conf
+# to enable this service:
+#
+# carbon_cache_enable (bool):	Set to NO by default.
+#			Set it to YES to enable it.
+# carbon_cache_instances:	Empty by default (start single instance).
+#			Space-separated list of instances to start.
+# carbon_cache_conf:		File where carbon configuration resides
+#			Default: /usr/local/etc/carbon/carbon.conf
+# carbon_cache_user:		The user account carbon daemon runs as what
+#			you want it to be. It uses 'root' user by
+#			default.
+# carbon_cache_group:		The group account carbon daemon runs as what
+#			you want it to be. It uses 'wheel' group by
+#			default.
+# carbon_cache_debug:		Determines if you want carbon to run in debug
+#			mode, it may be very verbose. It will not run
+#			in debug by default.
+# carbon_cache_logdir:	Directory where carbon logs are stored.
+#			Default: /var/db/carbon/log
+# 
+
+. /etc/rc.subr
+
+name=carbon_cache
+rcvar=carbon_cache_enable
+
+load_rc_config ${name}
+
+: ${carbon_cache_enable:=NO}
+: ${carbon_cache_instances:=""}
+: ${carbon_cache_user:=carbon}
+: ${carbon_cache_group:=carbon}
+: ${carbon_cache_conf:=/usr/local/etc/carbon/carbon.conf}
+: ${carbon_cache_debug:=NO}
+: ${carbon_cache_logdir:=/var/log/carbon/cache}
+: ${carbon_cache_pidfile:=/var/run/carbon/cache.pid}
+
+is_carbon_cache_instance() {
+    local instance
+    for instance in ${carbon_cache_instances}; do
+        if [ "${instance}" = "$1" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+if [ -n "${carbon_cache_instances}" ]; then
+    if [ -n "$2" ]; then
+        instance="$2"
+        if ! is_carbon_cache_instance ${instance}; then
+            echo "$0: no such instance defined in carbon_cache_instances."
+            exit 1
+        fi
+        instance_arg="--instance=${instance}"
+        eval carbon_cache_user=\${carbon_cache_${instance}_user:-"${carbon_cache_user}"}
+        eval carbon_cache_group=\${carbon_cache_${instance}_group:-"${carbon_cache_group}"}
+        eval carbon_cache_conf=\${carbon_cache_${instance}_conf:-"${carbon_cache_conf}"}
+        eval carbon_cache_debug=\${carbon_cache_${instance}_debug:-"${carbon_cache_debug}"}
+        eval carbon_cache_logdir=\${carbon_cache_${instance}_logdir:-"${carbon_cache_logdir}-${instance}"}
+        eval carbon_cache_pidfile=\${carbon_cache_${instance}_pidfile:-"/var/run/carbon/cache-${instance}.pid"}
+    elif [ -n "$1" ]; then
+        let retcode=0 >/dev/null
+        for instance in ${carbon_cache_instances}; do
+            echo "Processing carbon instance: ${instance}"
+            /usr/local/etc/rc.d/carbon-cache $1 ${instance}
+            let retcode=retcode+$? >/dev/null
+        done
+        exit $retcode
+    fi
+fi
+
+start_precmd="${name}_precmd"
+stop_cmd="${name}_stop"
+required_files="${carbon_cache_conf} /usr/local/etc/carbon/storage-schemas.conf"
+
+pidfile=${carbon_cache_pidfile}
+command_interpreter="/usr/local/bin/python2.7"
+command="/usr/local/bin/carbon-cache.py"
+command_args="--config=${carbon_cache_conf} ${instance_arg} --logdir ${carbon_cache_logdir} --pidfile ${pidfile} start"
+
+carbon_cache_precmd()
+{
+  /usr/bin/install -d -o ${carbon_cache_user} -g ${carbon_cache_group} -m 750 /var/db/carbon
+  /usr/bin/install -d -o ${carbon_cache_user} -g ${carbon_cache_group} -m 750 /var/log/carbon
+  /usr/bin/install -d -o ${carbon_cache_user} -g ${carbon_cache_group} -m 750 /var/run/carbon
+}
+
+carbon_cache_stop()
+{
+    echo "Stopping $name"
+    pids=`check_pidfile ${pidfile} ${command} ${command_interpreter}`
+
+    /usr/local/bin/carbon-cache.py --config=${carbon_cache_conf} ${instance_arg} --pidfile ${pidfile} stop
+    wait_for_pids ${pids}
+}
+
+run_rc_command "$1"
+

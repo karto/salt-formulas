@@ -1,0 +1,33 @@
+
+{### CONFIG DATA ###}
+{% set pgpoolii = {
+    'lookup': {
+        'pkg': 'pgpool-II',
+        'service': 'pgpool-II',
+        'config_file': '/etc/pgpool.conf',
+        'pool_hba_file': '/etc/pool_hba.conf',
+        'pcp_file': '/etc/pcp.conf',
+        'pool_passwd_file': '/etc/pool_passwd'
+    }
+} %}
+{% do salt['pillar.get']('pgpoolii', pgpoolii, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'FreeBSD': {
+        'pkg': 'pgpool-II33',
+        'service': 'pgpool',
+        'config_file': '/usr/local/etc/pgpool.conf',
+        'pool_hba_file': '/usr/local/etc/pool_hba.conf',
+        'pcp_file': '/usr/local/etc/pcp.conf',
+        'pool_passwd_file': '/usr/local/etc/pool_passwd'
+    },
+}, merge=salt['pillar.get']('pgpoolii:lookup')) %}
+{% do pgpoolii.lookup.update(lookup) %}
+
+
+{### Servers ###}
+{% set backends = salt['pillar.get']('postgresql:servers', {grains.fqdn: grains.fqdn_ip}) %}
+{% do pgpoolii.update({ 'backends': backends }) %}
+

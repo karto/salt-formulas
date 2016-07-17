@@ -1,0 +1,27 @@
+
+{### CONFIG DATA ###}
+{% set bind = {
+    'lookup': {
+        'pkg': 'bind',
+        'service': 'bind',
+        'config_file': '/etc/namedb/named.conf',
+        'master_dir': '/etc/namedb/master',
+        'dynamic_dir': '/etc/namedb/dynamic'
+    }
+} %}
+{% do salt['pillar.get']('bind', bind, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'FreeBSD': {
+        'pkg': 'bind910',
+        'service': 'named',
+        'config_file': '/usr/local/etc/namedb/named.conf',
+        'master_dir': '/usr/local/etc/namedb/master',
+        'dynamic_dir': '/usr/local/etc/namedb/dynamic'
+    },
+}, merge=salt['pillar.get']('bind:lookup')) %}
+{% do bind.lookup.update(lookup) %}
+
+

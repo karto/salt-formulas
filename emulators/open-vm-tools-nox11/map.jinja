@@ -1,0 +1,19 @@
+
+{### CONFIG DATA ###}
+{% set open_vm_tools_nox11 = {
+  'lookup': {
+    'pkg': 'open-vm-tools-nox11',
+    'service': 'vmware-guestd'
+  }
+} %}
+{% do salt['pillar.get']('emulators:open-vm-tools-nox11', open_vm_tools_nox11, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+  'default': {},
+  'FreeBSD': {}
+}, merge=salt['pillar.get']('emulators:open-vm-tools-nox11:lookup')) %}
+{% do open_vm_tools_nox11.lookup.update(lookup) %}
+
+

@@ -1,0 +1,21 @@
+
+{### CONFIG DATA ###}
+{% set graphite = {
+    'lookup': {
+        'pkg': 'py27-graphite-web',
+        'ekstra_pkgs': ['py27-psycopg2', 'py27-python-memcached'],
+        'service': 'graphite',
+        'config_dir': '/etc/graphite'
+    }
+} %}
+{% do salt['pillar.get']('www:graphite', graphite, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'FreeBSD': {
+        'config_dir': '/usr/local/etc/graphite'
+    },
+}, merge=salt['pillar.get']('www:graphite:lookup')) %}
+{% do graphite.lookup.update(lookup) %}
+

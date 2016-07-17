@@ -1,0 +1,24 @@
+
+{### CONFIG DATA ###}
+{% set salt_minion = {
+    'lookup': {
+        'pkg': 'salt-minion',
+        'service': 'salt-minion',
+        'config_file': '/etc/salt/minion',
+    }
+} %}
+{% do salt['pillar.get']('sysutils:salt:minion', salt_minion, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'default': {},
+    'FreeBSD': {
+        'pkg': 'py27-salt',
+        'service': 'salt_minion',
+        'config_file': '/usr/local/etc/salt/minion',
+    },
+}, merge=salt['pillar.get']('sysutils:salt:minion:lookup')) %}
+{% do salt_minion.lookup.update(lookup) %}
+
+

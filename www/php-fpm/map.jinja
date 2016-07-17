@@ -1,0 +1,27 @@
+
+{### CONFIG DATA ###}
+{% set php_fpm = {
+    'lookup': {
+        'pkg': 'php-fpm',
+        'service': 'php-fpm',
+        'config_file': '/etc/php-fpm.conf',
+        'config_dir': '/etc/fpm.d'
+    }
+} %}
+{% do salt['pillar.get']('www:php_fpm', php_fpm, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'FreeBSD': {
+        'pkg': 'php56',
+        'service': 'php-fpm',
+        'config_file': '/usr/local/etc/php-fpm.conf',
+        'config_dir': '/usr/local/etc/fpm.d'
+    },
+    'RedHat': {
+    },
+}, merge=salt['pillar.get']('www:php_fpm:lookup')) %}
+{% do php_fpm.lookup.update(lookup) %}
+
+

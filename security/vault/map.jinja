@@ -1,0 +1,20 @@
+
+{### CONFIG DATA ###}
+{% set vault = {
+    'lookup': {
+        'pkg': 'vault',
+        'service': 'vault',
+        'config_file': '/etc/vault.hcl'
+    }
+} %}
+{% do salt['pillar.get']('sysutils:vault', vault, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'FreeBSD': {
+        'config_file': '/usr/local/etc/vault.hcl'
+    },
+}, merge=salt['pillar.get']('sysutils:vault:lookup')) %}
+{% do vault.lookup.update(lookup) %}
+

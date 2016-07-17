@@ -1,0 +1,18 @@
+
+{### CONFIG DATA ###}
+{% set pf = {
+  'lookup': {
+    'service': 'pf',
+    'config_file': '/etc/pf.conf'
+  }
+} %}
+{% do salt['pillar.get']('security:pf', pf, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'FreeBSD': {
+    },
+}, merge=salt['pillar.get']('security:pf:lookup')) %}
+{% do pf.lookup.update(lookup) %}
+

@@ -1,0 +1,26 @@
+
+{### CONFIG DATA ###}
+{% set salt_master = {
+  'lookup': {
+    'pkg': 'py27-salt',
+    'service': 'salt_master',
+    'config_file': '/etc/salt/master',
+    'config_dir': '/etc/salt/master.d',
+    'git_dir': '/etc/salt'
+    'rc_conf': None
+  },
+  'git_url': None
+} %}
+{% do salt['pillar.get']('sysutils:salt:master', salt_master, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+  'FreeBSD': {
+    'config_file': '/usr/local/etc/salt/master',
+    'config_dir': '/usr/local/etc/salt/master.d'
+    'git_dir': '/usr/local/etc/salt'
+  },
+}, merge=salt['pillar.get']('sysutils:salt:master:lookup')) %}
+{% do salt_master.lookup.update(lookup) %}
+

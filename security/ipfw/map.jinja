@@ -1,0 +1,17 @@
+
+{### CONFIG DATA ###}
+{% set ipfw = {
+    'lookup': {
+        'config_file': '/etc/ipfw.rules'
+    }
+} %}
+{% do salt['pillar.get']('security:ipfw', ipfw, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'FreeBSD': {
+    },
+}, merge=salt['pillar.get']('security:ipfw:lookup')) %}
+{% do ipfw.lookup.update(lookup) %}
+

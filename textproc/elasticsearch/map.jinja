@@ -1,0 +1,26 @@
+
+
+{### CONFIG DATA ###}
+{% set elasticsearch = {
+    'lookup': {
+        'pkg': 'elasticsearch2',
+        'service': 'elasticsearch',
+        'config': '/etc/elasticsearch.yml',
+        'maintaince_script': '/etc/elasticsearch/maintaince.sh'
+    },
+    'plugins': {}
+} %}
+{% do salt['pillar.get']('textproc:elasticsearch', elasticsearch, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'FreeBSD': {
+        'config': '/usr/local/etc/elasticsearch/elasticsearch.yml',
+        'maintaince_script': '/usr/local/etc/elasticsearch/maintaince.sh',
+        'rc_conf': None
+    },
+}, merge=salt['pillar.get']('textproc:elasticsearch:lookup')) %}
+{% do elasticsearch.lookup.update(lookup) %}
+
+

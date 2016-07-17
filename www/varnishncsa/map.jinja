@@ -1,0 +1,17 @@
+
+{### CONFIG DATA ###}
+{% set varnishncsa = {
+    'lookup': {
+        'service': 'varnishncsa',
+    },
+} %}
+{% do salt['pillar.get']('varnishncsa', varnishncsa, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'FreeBSD': {},
+    'RedHat': {}
+}, merge=salt['pillar.get']('varnishncsa:lookup')) %}
+{% do varnishncsa.lookup.update(lookup) %}
+

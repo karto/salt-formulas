@@ -1,0 +1,31 @@
+
+{### CONFIG DATA ###}
+{% set nginx = {
+    'lookup': {
+        'pkg': 'nginx',
+        'service': 'nginx',
+        'config_file': '/etc/nginx/nginx.conf',
+        'config_dir': '/etc/nginx/conf.d',
+        'html_dir': '/usr/www/html',
+    },
+    'config_files': [],
+    'ssl_files': [],
+} %}
+{% do salt['pillar.get']('www:nginx', nginx, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'default': {},
+    'FreeBSD': {
+        'pkg': 'nginx',
+        'service': 'nginx',
+        'config_file': '/usr/local/etc/nginx/nginx.conf',
+        'config_dir': '/usr/local/etc/nginx/conf.d',
+        'html_dir': '/usr/local/www/html'
+    },
+    'RedHat': {},
+}, merge=salt['pillar.get']('www:nginx:lookup')) %}
+{% do nginx.lookup.update(lookup) %}
+
+

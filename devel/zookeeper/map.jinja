@@ -1,0 +1,32 @@
+
+{### CONFIG DATA ###}
+{% set zookeeper = {
+    'lookup': {
+        'pkg': 'zookeeper',
+        'service': 'zookeeper',
+        'config_file': '/etc/zookeeper/zoo.cfg',
+        'myid_file': '/var/db/zookeeper/myid'
+    },
+    'myid': None
+} %}
+{% do salt['pillar.get']('devel:zookeeper', zookeeper, merge=True) %}
+
+
+{### LOOKUP DATA ###}
+{% set lookup = salt['grains.filter_by']({
+    'FreeBSD': {
+        'config_file': '/usr/local/etc/zookeeper/zoo.cfg'
+    },
+}, merge=salt['pillar.get']('devel:zookeeper:lookup')) %}
+{% do zookeeper.lookup.update(lookup) %}
+
+
+
+{### LOOKUP myid ###}
+{% if zookeeper.servers %}
+    {% for key, value in zookeeper.servers.iteritems() %}
+        {% if value == grains['fqdn'] %}
+            {% do zookeeper.update({'myid': key}) %}
+        {% endif %}
+    {% endfor %}
+{% endif %}

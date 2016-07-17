@@ -1,0 +1,9 @@
+#!/bin/sh
+# Flush out the list before we begin.
+ipfw -q -f flush
+
+# Set rules command prefix
+cmd="ipfw -q"
+
+# Rules
+$cmd add allow all from any to any
